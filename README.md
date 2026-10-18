@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # QuanLyBanHang — Website Quản Lý Bán Hàng & Tồn Kho (Đồ Án Môn Công Nghệ Phần Mềm)
 
 Hệ thống quản lý bán hàng (Point of Sale), kiểm soát tồn kho và phân tích doanh thu hoàn chỉnh, được xây dựng theo kiến trúc phân lớp chuẩn công nghiệp, đảm bảo tính nguyên tử của giao dịch (ACID Transactions) và phân quyền chặt chẽ (RBAC).
@@ -121,3 +122,6 @@ QuanLyBanHang/
 ├── .gitignore                # Bỏ qua node_modules, .env, dist, logs
 └── package.json              # Script quản lý dev, test, migrate, seed đồng bộ
 ```
+=======
+# web-quan-li-ban-hang
+>>>>>>> 475cdc7e2208766bd67dc4a39673290acf5b387a
