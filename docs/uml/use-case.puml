@@ -1,0 +1,28 @@
+@startuml
+left to right direction
+actor "Quản trị viên" as Admin
+actor "Nhân viên bán hàng" as Staff
+rectangle "Hệ thống quản lý bán hàng" {
+ usecase "Đăng nhập" as UC1
+ usecase "Quản lý sản phẩm" as UC2
+ usecase "Quản lý danh mục" as UC3
+ usecase "Quản lý khách hàng" as UC4
+ usecase "Tạo đơn bán hàng" as UC5
+ usecase "Kiểm tra tồn kho" as UC6
+ usecase "Cập nhật tồn kho" as UC7
+ usecase "Xem báo cáo" as UC8
+ usecase "Quản lý tài khoản" as UC9
+}
+Admin --> UC1
+Staff --> UC1
+Admin --> UC2
+Admin --> UC3
+Admin --> UC4
+Staff --> UC4
+Admin --> UC5
+Staff --> UC5
+UC5 .> UC6 : <<include>>
+UC5 .> UC7 : <<include>>
+Admin --> UC8
+Admin --> UC9
+@enduml

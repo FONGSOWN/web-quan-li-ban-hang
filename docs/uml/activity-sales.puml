@@ -1,0 +1,55 @@
+@startuml
+title Activity Diagram — Quy trình Tạo Đơn Hàng & Xử Lý Tồn Kho (Sales Workflow)
+
+start
+:Nhân viên chọn khách hàng và sản phẩm cần bán;
+:Nhập số lượng, đơn giá và số tiền chiết khấu (nếu có);
+:Nhấn nút "Xác nhận tạo đơn";
+
+partition "Backend (Express API)" {
+    :Tiếp nhận request POST /api/orders;
+    :Xác thực JWT Token và quyền truy cập;
+    :Validate cấu trúc dữ liệu đầu vào (Zod Schema);
+    
+    if (Dữ liệu đầu vào hợp lệ?) then (Có)
+        :Mở Database Transaction;
+        :Khóa dòng các sản phẩm liên quan (SELECT ... FOR UPDATE);
+        
+        repeat :Duyệt từng sản phẩm trong đơn;
+            if (Tồn kho hiện tại >= Số lượng mua?) then (Đủ hàng)
+                :Tính thành tiền (unit_price * quantity);
+                :Cộng dồn vào tạm tính (Subtotal);
+            else (Thiếu hàng)
+                :Phát hiện thiếu tồn kho;
+                :Rollback Transaction;
+                :Trả về mã lỗi 400 (Sản phẩm không đủ tồn kho);
+                stop
+            endif
+        backward :Sản phẩm tiếp theo;
+        repeat while (Còn sản phẩm?) is (Có) not (Hết)
+
+        :Tính Tổng tiền = Max(0, Subtotal - Discount);
+        :Sinh mã đơn hàng duy nhất (DH-YYMMDD-XXXX);
+        :Lưu bản ghi vào bảng `orders`;
+        :Lưu danh sách chi tiết vào bảng `order_items` (snapshot giá và tên);
+        :Trừ số lượng tồn kho trong bảng `products`;
+        :Ghi log biến động kho vào bảng `stock_movements` (Type: OUT);
+        :Ghi nhật ký thao tác vào bảng `audit_logs` (CREATE_ORDER);
+        
+        :Commit Transaction;
+        :Trả về phản hồi 201 Created kèm chi tiết đơn;
+    else (Không)
+        :Trả về mã lỗi 400 Bad Request;
+        stop
+    endif
+}
+
+partition "Frontend (React UI)" {
+    :Hiển thị thông báo Toast thành công;
+    :Xóa giỏ hàng và cập nhật danh sách đơn hàng;
+    :Chuyển hướng xem chi tiết đơn hàng hoặc hóa đơn;
+}
+
+stop
+@enduml
+

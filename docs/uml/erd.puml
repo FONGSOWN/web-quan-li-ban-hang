@@ -1,0 +1,116 @@
+@startuml
+title Entity Relationship Diagram (ERD) — QuanLyBanHang Database
+
+hide circle
+skinparam linetype ortho
+
+entity "roles" as roles {
+  * id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  --
+  * name : VARCHAR(30) <<UNIQUE>>
+}
+
+entity "users" as users {
+  * id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  --
+  * role_id : BIGINT UNSIGNED <<FK>>
+  * full_name : VARCHAR(120)
+  * email : VARCHAR(190) <<UNIQUE>>
+  * password_hash : VARCHAR(255)
+  * is_active : BOOLEAN <<DEFAULT TRUE>>
+  * created_at : TIMESTAMP <<DEFAULT CURRENT_TIMESTAMP>>
+}
+
+entity "categories" as categories {
+  * id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  --
+  * name : VARCHAR(100) <<UNIQUE>>
+  description : VARCHAR(255)
+}
+
+entity "products" as products {
+  * id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  --
+  category_id : BIGINT UNSIGNED <<FK, NULLABLE>>
+  * sku : VARCHAR(60) <<UNIQUE>>
+  * name : VARCHAR(180)
+  description : TEXT
+  * cost_price : DECIMAL(12,2) <<DEFAULT 0>>
+  * sale_price : DECIMAL(12,2)
+  * stock_quantity : INT <<DEFAULT 0>>
+  * is_active : BOOLEAN <<DEFAULT TRUE>>
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "customers" as customers {
+  * id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  --
+  * full_name : VARCHAR(120)
+  * phone : VARCHAR(30) <<UNIQUE>>
+  email : VARCHAR(190)
+  address : VARCHAR(255)
+  * created_at : TIMESTAMP
+}
+
+entity "orders" as orders {
+  * id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  --
+  * order_code : VARCHAR(40) <<UNIQUE>>
+  customer_id : BIGINT UNSIGNED <<FK, NULLABLE>>
+  * created_by : BIGINT UNSIGNED <<FK>>
+  * status : ENUM('PENDING','COMPLETED','CANCELLED')
+  * subtotal : DECIMAL(12,2)
+  * discount_amount : DECIMAL(12,2) <<DEFAULT 0>>
+  * total_amount : DECIMAL(12,2)
+  note : VARCHAR(500)
+  * created_at : TIMESTAMP
+}
+
+entity "order_items" as order_items {
+  * id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  --
+  * order_id : BIGINT UNSIGNED <<FK>>
+  * product_id : BIGINT UNSIGNED <<FK>>
+  * product_name_snapshot : VARCHAR(180)
+  * quantity : INT
+  * unit_price : DECIMAL(12,2)
+  * line_total : DECIMAL(12,2)
+}
+
+entity "stock_movements" as stock_movements {
+  * id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  --
+  * product_id : BIGINT UNSIGNED <<FK>>
+  * user_id : BIGINT UNSIGNED <<FK>>
+  * movement_type : ENUM('IN','OUT','ADJUSTMENT')
+  * quantity : INT
+  reference_code : VARCHAR(60)
+  note : VARCHAR(255)
+  * created_at : TIMESTAMP
+}
+
+entity "audit_logs" as audit_logs {
+  * id : BIGINT UNSIGNED <<PK, AUTO_INCREMENT>>
+  --
+  user_id : BIGINT UNSIGNED <<FK, NULLABLE>>
+  * action : VARCHAR(100)
+  * entity_type : VARCHAR(80)
+  entity_id : VARCHAR(80)
+  details : JSON
+  * created_at : TIMESTAMP
+}
+
+roles ||--o{ users : "defines role for"
+users ||--o{ orders : "creates"
+users ||--o{ stock_movements : "performs"
+users |o--o{ audit_logs : "triggers"
+
+categories ||--o{ products : "contains"
+products ||--o{ order_items : "referenced in"
+products ||--o{ stock_movements : "tracks stock of"
+
+customers |o--o{ orders : "places"
+orders ||--|{ order_items : "consists of"
+
+@enduml

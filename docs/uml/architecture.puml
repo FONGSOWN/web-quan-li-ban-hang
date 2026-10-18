@@ -1,0 +1,20 @@
+@startuml
+skinparam componentStyle rectangle
+actor User
+package "Client" {
+ [React + Vite UI] as UI
+}
+package "Server" {
+ [Express REST API] as API
+ [Middleware: auth, validation, error] as MW
+ [Service layer: sales, stock, reports] as SVC
+ [Repository / Prisma] as REPO
+}
+database "MySQL 8" as DB
+User --> UI
+UI --> API : HTTPS / JSON
+API --> MW
+MW --> SVC
+SVC --> REPO
+REPO --> DB
+@enduml

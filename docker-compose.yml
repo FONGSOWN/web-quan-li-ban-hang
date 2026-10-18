@@ -1,0 +1,19 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: qlbh-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change_me_local_only}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-quanlybanhang}
+      MYSQL_USER: ${MYSQL_USER:-app_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-change_me_local_only}
+    ports: ["3306:3306"]
+    volumes: ["qlbh_mysql_data:/var/lib/mysql"]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+volumes:
+  qlbh_mysql_data:

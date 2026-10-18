@@ -1,0 +1,48 @@
+@startuml
+title Sequence Diagram — Tạo Đơn Hàng & Giao Dịch Kho (Create Order Transaction)
+
+autonumber
+actor Staff as "Nhân viên bán hàng"
+participant UI as "React POS UI"
+participant API as "Order Controller"
+participant MW as "Auth & RBAC Middleware"
+participant DB as "MySQL 8 (InnoDB Pool)"
+
+Staff -> UI: Chọn sản phẩm, số lượng, giảm giá, bấm "Xác nhận tạo đơn"
+UI -> API: POST /api/orders\nHeaders: Authorization: Bearer <token>\nBody: { customerId, items, discountAmount, note }
+
+API -> MW: Kiểm tra Bearer Token
+MW --> API: Token hợp lệ (user = { userId, role })
+
+API -> DB: BEGIN TRANSACTION
+
+API -> DB: SELECT id, name, sale_price, stock_quantity, is_active\nFROM products WHERE id IN (...) FOR UPDATE
+DB --> API: Danh sách sản phẩm kèm trạng thái khóa dòng
+
+alt Có sản phẩm không đủ tồn kho (stock_quantity < quantity)
+    API -> DB: ROLLBACK
+    API --> UI: 400 Bad Request ("Sản phẩm X không đủ tồn kho...")
+    UI --> Staff: Hiển thị lỗi cảnh báo thiếu hàng
+else Tồn kho đủ cho tất cả mặt hàng
+    API -> API: Tự động tính toán Subtotal và TotalAmount tại backend\nSinh mã đơn hàng DH-YYMMDD-XXXX
+    
+    API -> DB: INSERT INTO orders (order_code, customer_id, created_by, status, subtotal, discount_amount, total_amount, note)
+    DB --> API: orderId
+    
+    loop Cho từng sản phẩm trong đơn
+        API -> DB: INSERT INTO order_items (order_id, product_id, product_name_snapshot, quantity, unit_price, line_total)
+        API -> DB: UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?
+        API -> DB: INSERT INTO stock_movements (product_id, user_id, 'OUT', quantity, order_code, note)
+    end
+    
+    API -> DB: INSERT INTO audit_logs (CREATE_ORDER, orderId)
+    
+    API -> DB: COMMIT TRANSACTION
+    DB --> API: Giao dịch thành công
+    
+    API --> UI: 201 Created { orderId, orderCode, subtotal, discountAmount, totalAmount }
+    UI --> Staff: Thông báo thành công, làm mới giỏ hàng, cập nhật danh sách đơn
+end
+
+@enduml
+

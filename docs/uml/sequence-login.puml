@@ -1,0 +1,44 @@
+@startuml
+title Sequence Diagram — Đăng Nhập & Xác Thực JWT (Login Process)
+
+autonumber
+actor User as "Người dùng (Admin/Staff)"
+participant UI as "Giao diện React (Vite)"
+participant API as "Auth Controller (Express)"
+participant DB as "MySQL Database"
+participant JWT as "JWT Utility"
+participant BCRYPT as "Bcrypt Utility"
+
+User -> UI: Nhập Email và Mật khẩu, bấm Đăng nhập
+UI -> API: POST /api/auth/login { email, password }
+
+API -> DB: SELECT id, password_hash, is_active, role FROM users JOIN roles WHERE email = ?
+DB --> API: Trả về thông tin người dùng
+
+alt Người dùng không tồn tại
+    API --> UI: 401 Unauthorized (Email hoặc mật khẩu không chính xác)
+    UI --> User: Hiển thị thông báo lỗi
+else Tài khoản bị khóa (is_active = FALSE)
+    API --> UI: 403 Forbidden (Tài khoản đã bị tạm khóa)
+    UI --> User: Hiển thị cảnh báo tài khoản bị khóa
+else Thông tin hợp lệ
+    API -> BCRYPT: comparePassword(password, password_hash)
+    BCRYPT --> API: Kết quả so khớp (true / false)
+    
+    alt Mật khẩu sai
+        API --> UI: 401 Unauthorized (Email hoặc mật khẩu không chính xác)
+        UI --> User: Hiển thị thông báo lỗi
+    else Mật khẩu đúng
+        API -> JWT: signToken({ userId, email, role, fullName })
+        JWT --> API: Chuỗi JWT Token
+        
+        API -> DB: INSERT INTO audit_logs (LOGIN)
+        
+        API --> UI: 200 OK { token, user: { id, fullName, email, role } }
+        UI -> UI: Lưu Token vào localStorage (qlbh_token)
+        UI --> User: Điều hướng vào Dashboard & mở khóa các phân hệ theo Role
+    end
+end
+
+@enduml
+
